@@ -38,6 +38,7 @@ func (b *TerminalBot) read() {
 					from: "",
 					to:   "",
 					in:   "#stdin",
+					text: buf.Text(),
 					bot:  b,
 				})
 				break
