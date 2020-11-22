@@ -3,9 +3,16 @@ package chat
 import (
 	"fmt"
 	"os"
+	"regexp"
 
 	"github.com/jhunt/go-chat/lib/slack"
 )
+
+var salutation *regexp.Regexp
+
+func init() {
+	salutation = regexp.MustCompile(`^\s*<@.*?>\s*,?\s*`)
+}
 
 type SlackBot struct {
 	init bool
@@ -58,6 +65,7 @@ func (b *SlackBot) read() {
 		if m.Type != "message" || !m.IsDirected(b.c.Name) {
 			continue
 		}
+		m.Text = salutation.ReplaceAllString(m.Text, "")
 
 		fmt.Fprintf(os.Stderr, "[%s]\n", m.Text)
 		for want, handler := range b.on {
