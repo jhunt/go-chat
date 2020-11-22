@@ -2,4 +2,4 @@ build:
 	go build .
 
 examples: build
-	go build ./example/...
+	for x in ./example/*; do go build $$x; done
