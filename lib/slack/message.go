@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type Message struct {
+	TS       string    `json:"ts,omitempty"`
+	Received time.Time `json:"-"`
+
 	ID      uint64 `json:"id"`
 	Type    string `json:"type"`
 	User    string `json:"user"`

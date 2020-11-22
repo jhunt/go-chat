@@ -1,13 +1,18 @@
 package chat
 
+import (
+	"time"
+)
+
 type Handle string
 type Context string
 
 type Message struct {
-	From Handle
-	To   Handle
-	In   Context
-	Text string
+	Received time.Time
+	From     Handle
+	To       Handle
+	In       Context
+	Text     string
 
 	bot Bot
 }

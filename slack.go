@@ -75,10 +75,11 @@ Processing:
 		}
 
 		msg := Message{
-			From: Handle(m.User),
-			In:   Context(m.Channel),
-			Text: m.Text,
-			bot:  b,
+			Received: m.Received,
+			From:     Handle(m.User),
+			In:       Context(m.Channel),
+			Text:     m.Text,
+			bot:      b,
 		}
 
 		if b.every != nil {

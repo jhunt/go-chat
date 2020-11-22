@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync/atomic"
+	"time"
 
 	"golang.org/x/net/websocket"
 )
@@ -106,6 +108,12 @@ func (c Client) Receive() (Message, error) {
 	err := websocket.JSON.Receive(c.c, &m)
 	if err != nil {
 		return Message{}, err
+	}
+
+	fmt.Printf("%s > ts: %s\n", m.Type, m.TS)
+	if f, err := strconv.ParseFloat(m.TS, 64); err == nil {
+		m.Received = time.Unix(int64(f), 0)
+		fmt.Printf("setting received to %v\n", m.Received)
 	}
 
 	m.interned = true

@@ -35,7 +35,7 @@ func main() {
 
 	fmt.Printf("connected; awaiting *every* message...\n")
 	bot.Every(func(msg chat.Message) chat.Then {
-		fmt.Printf("[%s] %s: %s\n", msg.In, msg.From, msg.Text)
+		fmt.Printf("%s [%s] %s: %s\n", msg.Received.Format("2006-01-02 15:04:05+0000"), msg.In, msg.From, msg.Text)
 		return chat.Handled
 	})
 
