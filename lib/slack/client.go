@@ -5,17 +5,21 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"sync/atomic"
 
 	"golang.org/x/net/websocket"
 )
 
 type Client struct {
-	Name     string
-	Channels map[string]string
+	Name string
 
-	c    *websocket.Conn
-	next uint64
+	users map[string]User
+	chans map[string]Channel
+	idmap map[string]string
+	token string
+	c     *websocket.Conn
+	next  uint64
 }
 
 func Connect(token string) (Client, error) {
@@ -57,7 +61,8 @@ func Connect(token string) (Client, error) {
 
 	chans := make(map[string]string)
 	for _, c := range r.Channels {
-		chans[c.Name] = c.ID
+		chans["#"+c.Name] = c.ID
+		chans[c.ID] = "#" + c.Name
 	}
 
 	ws, err := websocket.Dial(r.Url, "", "https://api.slack.com/")
@@ -65,27 +70,89 @@ func Connect(token string) (Client, error) {
 		return Client{}, err
 	}
 
-	return Client{
-		c:        ws,
-		Name:     r.Self.ID,
-		Channels: chans,
-	}, nil
+	c := Client{
+		c:     ws,
+		token: token,
+		idmap: chans,
+		users: make(map[string]User),
+		chans: make(map[string]Channel),
+
+		Name: r.Self.ID,
+	}
+	c.fetchUsers()
+
+	return c, nil
+}
+
+func (c Client) url(rel string, args ...interface{}) string {
+	if !strings.HasPrefix(rel, "/") {
+		rel = "/" + rel
+	}
+	return base + fmt.Sprintf(rel, args...)
 }
 
 func (c Client) Send(m Message) error {
 	m.ID = atomic.AddUint64(&c.next, 1)
-	if ch, ok := c.Channels[m.Channel]; ok {
+	if ch, ok := c.idmap[m.Channel]; ok {
 		m.Channel = ch
 	}
-	b, _ := json.Marshal(m)
-	fmt.Printf("MESSAGE: %s\n", string(b))
-	b, _ = json.Marshal(c.Channels)
-	fmt.Printf("CHANNELS: %s\n", string(b))
 
+	c.intern(&m)
 	return websocket.JSON.Send(c.c, m)
 }
 
 func (c Client) Receive() (Message, error) {
 	var m Message
-	return m, websocket.JSON.Receive(c.c, &m)
+	err := websocket.JSON.Receive(c.c, &m)
+	if err != nil {
+		return Message{}, err
+	}
+
+	m.interned = true
+	c.extern(&m)
+	return m, err
+}
+
+func (c *Client) id2name(id string) string {
+	if name, exists := c.idmap[id]; exists {
+		return name
+	}
+
+	name := id
+	if strings.HasPrefix(id, "U") {
+		if user, found := c.FindUser(id); found {
+			name = "@" + user.Name
+		}
+	}
+	if strings.HasPrefix(id, "C") {
+		if channel, found := c.FindChannel(id); found {
+			name = "#" + channel.Name
+		}
+	}
+
+	c.idmap[id] = name
+	c.idmap[name] = id
+	return name
+}
+
+func (c *Client) name2id(name string) string {
+	if id, exists := c.idmap[name]; exists {
+		return id
+	}
+
+	id := name
+	if strings.HasPrefix(name, "@") {
+		if user, found := c.FindUser(name); found {
+			id = user.ID
+		}
+	}
+	if strings.HasPrefix(id, "#") {
+		if channel, found := c.FindChannel(name); found {
+			id = channel.ID
+		}
+	}
+
+	c.idmap[id] = name
+	c.idmap[name] = id
+	return id
 }
