@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/jhunt/go-chat"
 )
@@ -34,18 +33,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	say := func() {
-		bot.Post(channels, "every 15s: hello, world!")
-	}
-
-	bot.On("info", func(msg chat.Message) chat.Then {
-		msg.Reply("no info available at this time")
+	fmt.Printf("connected; awaiting *every* message...\n")
+	bot.Every(func(msg chat.Message) chat.Then {
+		fmt.Printf("[%s] %s: %s\n", msg.In, msg.From, msg.Text)
 		return chat.Handled
 	})
 
-	t := time.NewTicker(15 * time.Second)
-	say()
-	for range t.C {
-		say()
+	for {
 	}
 }

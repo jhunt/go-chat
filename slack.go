@@ -15,9 +15,10 @@ func init() {
 }
 
 type SlackBot struct {
-	init bool
-	on map[string]Handler
-	c slack.Client
+	init  bool
+	on    map[string]Handler
+	every Handler
+	c     slack.Client
 }
 
 func Slack(token string) (Bot, error) {
@@ -45,8 +46,17 @@ func (b *SlackBot) Post(to []string, msg string, args ...interface{}) {
 	}
 }
 
+func (b *SlackBot) Every(fn Handler) {
+	b.every = fn
+	b.listen()
+}
+
 func (b *SlackBot) On(in string, fn Handler) {
 	b.on[in] = fn
+	b.listen()
+}
+
+func (b *SlackBot) listen() {
 	if !b.init {
 		b.init = true
 		go b.read()
@@ -54,6 +64,7 @@ func (b *SlackBot) On(in string, fn Handler) {
 }
 
 func (b *SlackBot) read() {
+Processing:
 	for {
 		m, err := b.c.Receive()
 		if err != nil {
@@ -62,22 +73,35 @@ func (b *SlackBot) read() {
 		}
 
 		fmt.Fprintf(os.Stderr, "recv: %s\n", m)
-		if m.Type != "message" || !m.IsDirected(b.c.Name) {
+		if m.Type != "message" {
 			continue
 		}
-		m.Text = salutation.ReplaceAllString(m.Text, "")
 
-		fmt.Fprintf(os.Stderr, "[%s]\n", m.Text)
-		for want, handler := range b.on {
-			if want == m.Text {
-				fmt.Fprintf(os.Stderr, "invoking handler...\n")
-				handler(Message{
-					from: "", // FIXME
-					to:   "", // FIXME
-					in:   Context(m.Channel),
-					text: m.Text,
-					bot:  b,
-				})
+		msg := Message{
+			From: "", // FIXME
+			To:   "", // FIXME
+			In:   Context(m.Channel),
+			Text: m.Text,
+			bot:  b,
+		}
+
+		if b.every != nil {
+			fmt.Fprintf(os.Stderr, "invoking {*} handler...\n")
+			if b.every(msg) == Handled {
+				continue Processing
+			}
+		}
+
+		if m.IsDirected(b.c.Name) {
+			msg.Text = salutation.ReplaceAllString(m.Text, "")
+
+			for want, handler := range b.on {
+				if want == m.Text {
+					fmt.Fprintf(os.Stderr, "invoking [%s] handler...\n", want)
+					if handler(msg) == Handled {
+						continue Processing
+					}
+				}
 			}
 		}
 	}
