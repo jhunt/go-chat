@@ -2,7 +2,6 @@ package chat
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 
 	"github.com/jhunt/go-chat/lib/slack"
@@ -68,25 +67,21 @@ Processing:
 	for {
 		m, err := b.c.Receive()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "oops: %s\n", err)
 			continue
 		}
 
-		fmt.Fprintf(os.Stderr, "recv: %s\n", m)
 		if m.Type != "message" {
 			continue
 		}
 
 		msg := Message{
-			From: "", // FIXME
-			To:   "", // FIXME
+			From: Handle(m.User),
 			In:   Context(m.Channel),
 			Text: m.Text,
 			bot:  b,
 		}
 
 		if b.every != nil {
-			fmt.Fprintf(os.Stderr, "invoking {*} handler...\n")
 			if b.every(msg) == Handled {
 				continue Processing
 			}
@@ -97,7 +92,6 @@ Processing:
 
 			for want, handler := range b.on {
 				if want == m.Text {
-					fmt.Fprintf(os.Stderr, "invoking [%s] handler...\n", want)
 					if handler(msg) == Handled {
 						continue Processing
 					}
