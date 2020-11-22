@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"html"
 	"os"
 	"time"
-	"html"
 
 	"github.com/jhunt/go-chat"
 	"github.com/jhunt/go-rss"
