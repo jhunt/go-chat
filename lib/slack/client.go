@@ -96,10 +96,6 @@ func (c Client) url(rel string, args ...interface{}) string {
 
 func (c Client) Send(m Message) error {
 	m.ID = atomic.AddUint64(&c.next, 1)
-	if ch, ok := c.idmap[m.Channel]; ok {
-		m.Channel = ch
-	}
-
 	c.intern(&m)
 	return websocket.JSON.Send(c.c, m)
 }
