@@ -111,6 +111,9 @@ func (c Client) Receive() (Message, error) {
 		m.Received = time.Unix(int64(f), 0)
 	}
 
+	// drop c2a0 non-breaking spaces and such
+	m.Text = strings.Join(strings.Fields(m.Text), " ")
+
 	m.interned = true
 	c.extern(&m)
 	return m, err
