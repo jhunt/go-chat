@@ -110,10 +110,8 @@ func (c Client) Receive() (Message, error) {
 		return Message{}, err
 	}
 
-	fmt.Printf("%s > ts: %s\n", m.Type, m.TS)
 	if f, err := strconv.ParseFloat(m.TS, 64); err == nil {
 		m.Received = time.Unix(int64(f), 0)
-		fmt.Printf("setting received to %v\n", m.Received)
 	}
 
 	m.interned = true
