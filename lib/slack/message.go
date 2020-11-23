@@ -28,11 +28,11 @@ func (m Message) String() string {
 	return fmt.Sprintf("[%d] %s: %s> %s", m.ID, m.Type, m.Channel, m.Text)
 }
 
-func prefix(x, s string) string {
-	if strings.HasPrefix(s, x) {
-		return s
+func prefix(sigil, name string) string {
+	if strings.HasPrefix(name, sigil) {
+		return name
 	}
-	return x + x
+	return sigil + name
 }
 
 func (c Client) intern(m *Message) {
