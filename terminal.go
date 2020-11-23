@@ -1,10 +1,10 @@
 package chat
 
 import (
-	"regexp"
 	"bufio"
 	"fmt"
 	"os"
+	"regexp"
 )
 
 type TerminalBot struct {

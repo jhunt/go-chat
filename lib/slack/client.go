@@ -45,7 +45,7 @@ func Connect(token string) (Client, error) {
 		Error string `json:"error"`
 		Url   string `json:"url"`
 		Self  struct {
-			ID string `json:"id"`
+			ID   string `json:"id"`
 			Name string `json:"name"`
 		} `json:"self"`
 
