@@ -46,6 +46,7 @@ func Connect(token string) (Client, error) {
 		Url   string `json:"url"`
 		Self  struct {
 			ID string `json:"id"`
+			Name string `json:"name"`
 		} `json:"self"`
 
 		Channels []struct {
@@ -79,7 +80,7 @@ func Connect(token string) (Client, error) {
 		users: make(map[string]User),
 		chans: make(map[string]Channel),
 
-		Name: r.Self.ID,
+		Name: r.Self.Name,
 	}
 	c.fetchUsers()
 
