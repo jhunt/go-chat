@@ -36,7 +36,6 @@ func (b *SlackBot) Post(to []string, msg string, args ...interface{}) {
 	text := fmt.Sprintf(msg, args...)
 
 	for _, whom := range to {
-		fmt.Printf("saying '%s' to %s\n", text, whom)
 		b.c.Send(slack.Message{
 			Type:    "message",
 			Channel: whom,
