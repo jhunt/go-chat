@@ -4,19 +4,16 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"regexp"
+	"time"
 )
 
 type TerminalBot struct {
-	init  bool
-	on    map[*regexp.Regexp]Handler
-	every Handler
+	init bool
+	d    Dispatcher
 }
 
 func Terminal() (Bot, error) {
-	return &TerminalBot{
-		on: make(map[*regexp.Regexp]Handler),
-	}, nil
+	return &TerminalBot{}, nil
 }
 
 func (b *TerminalBot) Post(to []string, msg string, args ...interface{}) {
@@ -24,12 +21,12 @@ func (b *TerminalBot) Post(to []string, msg string, args ...interface{}) {
 }
 
 func (b *TerminalBot) Every(fn Handler) {
-	b.every = fn
+	b.d.Every(fn)
 	b.listen()
 }
 
 func (b *TerminalBot) On(in string, fn Handler) {
-	b.on[regexp.MustCompile(in)] = fn
+	b.d.On(in, fn)
 	b.listen()
 }
 
@@ -42,9 +39,11 @@ func (b *TerminalBot) listen() {
 
 func (b *TerminalBot) read() {
 	buf := bufio.NewScanner(os.Stdin)
-Processing:
 	for buf.Scan() {
 		msg := Message{
+			Received:  time.Now(),
+			Addressed: true,
+
 			From: "",
 			To:   "",
 			In:   "#stdin",
@@ -52,18 +51,6 @@ Processing:
 			bot:  b,
 		}
 
-		if b.every != nil {
-			if b.every(msg) == Handled {
-				continue Processing
-			}
-		}
-
-		for pat, handler := range b.on {
-			if matches := pat.FindStringSubmatch(msg.Text); matches != nil {
-				if handler(msg, matches...) == Handled {
-					continue Processing
-				}
-			}
-		}
+		b.d.Dispatch(msg)
 	}
 }

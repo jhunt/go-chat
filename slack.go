@@ -14,10 +14,9 @@ func init() {
 }
 
 type SlackBot struct {
-	init  bool
-	on    map[*regexp.Regexp]Handler
-	every Handler
-	c     slack.Client
+	init bool
+	c    slack.Client
+	d    Dispatcher
 }
 
 func Slack(token string) (Bot, error) {
@@ -26,10 +25,7 @@ func Slack(token string) (Bot, error) {
 		return nil, err
 	}
 
-	return &SlackBot{
-		c:  c,
-		on: make(map[*regexp.Regexp]Handler),
-	}, nil
+	return &SlackBot{c: c}, nil
 }
 
 func (b *SlackBot) Post(to []string, msg string, args ...interface{}) {
@@ -45,12 +41,12 @@ func (b *SlackBot) Post(to []string, msg string, args ...interface{}) {
 }
 
 func (b *SlackBot) Every(fn Handler) {
-	b.every = fn
+	b.d.Every(fn)
 	b.listen()
 }
 
 func (b *SlackBot) On(in string, fn Handler) {
-	b.on[regexp.MustCompile(in)] = fn
+	b.d.On(in, fn)
 	b.listen()
 }
 
@@ -62,7 +58,6 @@ func (b *SlackBot) listen() {
 }
 
 func (b *SlackBot) read() {
-Processing:
 	for {
 		m, err := b.c.Receive()
 		if err != nil {
@@ -75,28 +70,17 @@ Processing:
 
 		msg := Message{
 			Received: m.Received,
-			From:     Handle(m.User),
-			In:       Context(m.Channel),
-			Text:     m.Text,
-			bot:      b,
-		}
 
-		if b.every != nil {
-			if b.every(msg) == Handled {
-				continue Processing
-			}
+			From: Handle(m.User),
+			In:   Context(m.Channel),
+			Text: m.Text,
+			bot:  b,
 		}
-
 		if m.IsDirected(b.c.Name) {
+			msg.Addressed = true
 			msg.Text = salutation.ReplaceAllString(m.Text, "")
-
-			for pat, handler := range b.on {
-				if matches := pat.FindStringSubmatch(m.Text); matches != nil {
-					if handler(msg, matches...) == Handled {
-						continue Processing
-					}
-				}
-			}
 		}
+
+		b.d.Dispatch(msg)
 	}
 }
