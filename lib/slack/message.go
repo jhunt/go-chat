@@ -42,7 +42,7 @@ func (c Client) intern(m *Message) {
 	if m.User != "" {
 		m.User = c.name2id(prefix("@", m.User))
 	}
-	if m.Channel != "" {
+	if m.Channel != "" && !strings.HasPrefix(m.Channel, "D") {
 		m.Channel = c.name2id(prefix("#", m.Channel))
 	}
 
