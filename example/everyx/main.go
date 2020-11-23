@@ -38,7 +38,7 @@ func main() {
 		bot.Post(channels, "every 15s: hello, world!")
 	}
 
-	bot.On("info", func(msg chat.Message) chat.Then {
+	bot.On("info", func(msg chat.Message, _ ...string) chat.Then {
 		msg.Reply("no info available at this time")
 		return chat.Handled
 	})

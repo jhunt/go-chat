@@ -15,7 +15,7 @@ func init() {
 
 type SlackBot struct {
 	init  bool
-	on    map[string]Handler
+	on    map[*regexp.Regexp]Handler
 	every Handler
 	c     slack.Client
 }
@@ -28,7 +28,7 @@ func Slack(token string) (Bot, error) {
 
 	return &SlackBot{
 		c:  c,
-		on: make(map[string]Handler),
+		on: make(map[*regexp.Regexp]Handler),
 	}, nil
 }
 
@@ -51,7 +51,7 @@ func (b *SlackBot) Every(fn Handler) {
 }
 
 func (b *SlackBot) On(in string, fn Handler) {
-	b.on[in] = fn
+	b.on[regexp.MustCompile(in)] = fn
 	b.listen()
 }
 
@@ -91,9 +91,9 @@ Processing:
 		if m.IsDirected(b.c.Name) {
 			msg.Text = salutation.ReplaceAllString(m.Text, "")
 
-			for want, handler := range b.on {
-				if want == m.Text {
-					if handler(msg) == Handled {
+			for pat, handler := range b.on {
+				if matches := pat.FindStringSubmatch(m.Text); matches != nil {
+					if handler(msg, matches...) == Handled {
 						continue Processing
 					}
 				}

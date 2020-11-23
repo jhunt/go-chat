@@ -7,7 +7,7 @@ const (
 	Continue
 )
 
-type Handler func(Message) Then
+type Handler func(Message, ...string) Then
 
 type Bot interface {
 	Post([]string, string, ...interface{})

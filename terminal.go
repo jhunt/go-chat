@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"regexp"
 	"bufio"
 	"fmt"
 	"os"
@@ -8,13 +9,13 @@ import (
 
 type TerminalBot struct {
 	init  bool
-	on    map[string]Handler
+	on    map[*regexp.Regexp]Handler
 	every Handler
 }
 
 func Terminal() (Bot, error) {
 	return &TerminalBot{
-		on: make(map[string]Handler),
+		on: make(map[*regexp.Regexp]Handler),
 	}, nil
 }
 
@@ -28,7 +29,7 @@ func (b *TerminalBot) Every(fn Handler) {
 }
 
 func (b *TerminalBot) On(in string, fn Handler) {
-	b.on[in] = fn
+	b.on[regexp.MustCompile(in)] = fn
 	b.listen()
 }
 
@@ -41,25 +42,25 @@ func (b *TerminalBot) listen() {
 
 func (b *TerminalBot) read() {
 	buf := bufio.NewScanner(os.Stdin)
-	m := Message{
-		From: "",
-		To:   "",
-		In:   "#stdin",
-		Text: buf.Text(),
-		bot:  b,
-	}
-
 Processing:
 	for buf.Scan() {
+		msg := Message{
+			From: "",
+			To:   "",
+			In:   "#stdin",
+			Text: buf.Text(),
+			bot:  b,
+		}
+
 		if b.every != nil {
-			if b.every(m) == Handled {
+			if b.every(msg) == Handled {
 				continue Processing
 			}
 		}
 
-		for want, handler := range b.on {
-			if want == buf.Text() {
-				if handler(m) == Handled {
+		for pat, handler := range b.on {
+			if matches := pat.FindStringSubmatch(msg.Text); matches != nil {
+				if handler(msg, matches...) == Handled {
 					continue Processing
 				}
 			}

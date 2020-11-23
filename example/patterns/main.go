@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"regexp"
 
 	"github.com/jhunt/go-chat"
 )
@@ -33,11 +34,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("connected; awaiting *every* message...\n")
-	bot.Every(func(msg chat.Message, _ ...string) chat.Then {
-		fmt.Printf("%s [%s] %s: %s\n", msg.Received.Format("2006-01-02 15:04:05+0000"), msg.In, msg.From, msg.Text)
-		return chat.Handled
-	})
+	lower := regexp.MustCompile(`[a-z]`)
+	bot.On(`\s*is\s+(.*)\s+upper\s*case\?\s*$`,
+		func(msg chat.Message, args ...string) chat.Then {
+			if !lower.MatchString(args[1]) {
+				msg.Reply("yup, looks like '%s' upper case alright", args[1])
+			} else {
+				msg.Reply("nope; '%s' is definitely not uppercase", args[1])
+			}
+			return chat.Handled
+		})
 
 	for {
 	}
