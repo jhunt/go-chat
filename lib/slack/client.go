@@ -1,7 +1,9 @@
 package slack
 
 import (
+	"syscall"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -94,10 +96,21 @@ func (c Client) url(rel string, args ...interface{}) string {
 	return base + fmt.Sprintf(rel, args...)
 }
 
-func (c Client) Send(m Message) error {
+func (c *Client) Send(m Message) error {
 	m.ID = atomic.AddUint64(&c.next, 1)
 	c.intern(&m)
-	return websocket.JSON.Send(c.c, m)
+	if err := websocket.JSON.Send(c.c, m); err != nil {
+		if errors.Is(err, syscall.EPIPE) {
+			newc, err := Connect(c.token)
+			if err != nil {
+				return err
+			}
+			c.c = newc.c
+			return websocket.JSON.Send(c.c, m)
+		}
+		return err
+	}
+	return nil
 }
 
 func (c Client) Receive() (Message, error) {
