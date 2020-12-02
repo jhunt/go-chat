@@ -2,6 +2,7 @@ package chat
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 
 	"github.com/jhunt/go-chat/lib/slack"
@@ -32,11 +33,13 @@ func (b *SlackBot) Post(to []string, msg string, args ...interface{}) {
 	text := fmt.Sprintf(msg, args...)
 
 	for _, whom := range to {
-		b.c.Send(slack.Message{
+		if err := b.c.Send(slack.Message{
 			Type:    "message",
 			Channel: whom,
 			Text:    text,
-		})
+		}); err != nil {
+			fmt.Fprintf(os.Stderr, "unable to post to slack (%s): %s\n", whom, err)
+		}
 	}
 }
 
